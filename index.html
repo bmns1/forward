@@ -1,19 +1,95 @@
-<script>
-  (function() {
-    // 1. Get the URL parameters from the current window
-    const params = new URLSearchParams(window.location.search);
-    const passkeyToken = params.get('passkeyToken');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verifying Login...</title>
+    <!-- Using Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Simple spinner animation */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #0d9488; /* Teal color from your script */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen font-sans">
 
-    if (passkeyToken) {
-      // 2. This is your *actual* web app URL
-      const scriptUrl = "https://script.google.com/macros/s/AKfycbx3LGShhqFBG5Y2TocWHYYgg8Sp-mK2YbkZ2x6tWJwf6li0teEvIYYXa5zNxDKtV4U7/exec";
-      
-      // 3. Re-build the full, correct URL and redirect the user
-      const destinationUrl = scriptUrl + '?passkeyToken=' + passkeyToken;
-      window.location.replace(destinationUrl);
-    } else {
-      // If someone lands here by accident
-      document.body.innerHTML = "<h1>Authentication in progress...</h1>";
-    }
-  })();
-</script>
+    <div id="loading-state" class="bg-white p-8 rounded-lg shadow-md text-center">
+        <div class="spinner mx-auto mb-4"></div>
+        <h1 class="text-2xl font-semibold text-gray-800">Verifying your login...</h1>
+        <p class="text-gray-600">Please wait, we're securely signing you in.</p>
+    </div>
+
+    <div id="error-state" class="bg-white p-8 rounded-lg shadow-md text-center hidden">
+        <h1 class="text-2xl font-semibold text-red-600">Login Failed</h1>
+        <p id="error-message" class="text-gray-600 mt-2">Your login link was invalid or has expired. Please try again.</p>
+        <a href="https://www.svaportal.com" class="mt-4 inline-block bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700">
+            Back to Portal
+        </a>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        // 1. Paste your Google Apps Script Web App URL here
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx3LGShhqFBG5Y2TocWHYYgg8Sp-mK2YbkZ2x6tWJwf6li0teEvIYYXa5zNxDKtV4U7/exec";
+        
+        // 2. Set your main portal's URL (this should match your script)
+        const PORTAL_URL = "https://www.svaportal.com"; 
+
+        // ---------------------
+
+        // This function runs as soon as the page loads
+        (async function verifyLogin() {
+            const loadingDiv = document.getElementById('loading-state');
+            const errorDiv = document.getElementById('error-state');
+            const errorMessage = document.getElementById('error-message');
+
+            try {
+                // 1. Get the passkeyToken from the URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const passkeyToken = urlParams.get('passkeyToken');
+
+                if (!passkeyToken) {
+                    throw new Error("No login token found. Please use the link from your email.");
+                }
+
+                // 2. Call your Google Apps Script doGet function
+                const response = await fetch(`${SCRIPT_URL}?passkeyToken=${passkeyToken}`, {
+                    method: 'GET',
+                    redirect: 'follow'
+                });
+
+                const result = await response.json();
+
+                // 3. Handle the JSON response
+                if (result.status === 'success' && result.data.sessionToken) {
+                    // SUCCESS!
+                    // 4. Redirect the main browser window to the portal
+                    const destinationUrl = `${PORTAL_URL}#token=${result.data.sessionToken}`;
+                    window.location.replace(destinationUrl);
+
+                } else {
+                    // FAILURE!
+                    // Show the error message from the script
+                    throw new Error(result.error || "An unknown error occurred.");
+                }
+
+            } catch (err) {
+                // Show the error state
+                errorMessage.textContent = err.message;
+                loadingDiv.classList.add('hidden');
+                errorDiv.classList.remove('hidden');
+            }
+        })();
+    </script>
+</body>
+</html>
