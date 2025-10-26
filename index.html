@@ -1,0 +1,19 @@
+<script>
+  (function() {
+    // 1. Get the URL parameters from the current window
+    const params = new URLSearchParams(window.location.search);
+    const passkeyToken = params.get('passkeyToken');
+
+    if (passkeyToken) {
+      // 2. This is your *actual* web app URL
+      const scriptUrl = "https://script.google.com/macros/s/AKfycbx3LGShhqFBG5Y2TocWHYYgg8Sp-mK2YbkZ2x6tWJwf6li0teEvIYYXa5zNxDKtV4U7/exec";
+      
+      // 3. Re-build the full, correct URL and redirect the user
+      const destinationUrl = scriptUrl + '?passkeyToken=' + passkeyToken;
+      window.location.replace(destinationUrl);
+    } else {
+      // If someone lands here by accident
+      document.body.innerHTML = "<h1>Authentication in progress...</h1>";
+    }
+  })();
+</script>
