@@ -55,7 +55,6 @@
             const errorMessage = document.getElementById('error-message');
 
             try {
-                // 1. Get the passkeyToken from the URL
                 const urlParams = new URLSearchParams(window.location.search);
                 const passkeyToken = urlParams.get('passkeyToken');
 
@@ -63,30 +62,23 @@
                     throw new Error("No login token found. Please use the link from your email.");
                 }
 
-                // 2. Call your Google Apps Script doGet function
-                const response = await fetch(`${SCRIPT_URL}?passkeyToken=${passkeyToken}`, {
-                    method: 'GET',
-                    mode: 'no-cors',
-                    redirect: 'follow'
-                });
+                // Removed mode: 'no-cors' to allow the browser to read the JSON response
+                const response = await fetch(`${SCRIPT_URL}?passkeyToken=${passkeyToken}`);
+
+                if (!response.ok) {
+                    throw new Error("Server communication failed.");
+                }
 
                 const result = await response.json();
 
-                // 3. Handle the JSON response
                 if (result.status === 'success' && result.data.sessionToken) {
-                    // SUCCESS!
-                    // 4. Redirect the main browser window to the portal
                     const destinationUrl = `${PORTAL_URL}#token=${result.data.sessionToken}`;
                     window.location.replace(destinationUrl);
-
                 } else {
-                    // FAILURE!
-                    // Show the error message from the script
                     throw new Error(result.error || "An unknown error occurred.");
                 }
 
             } catch (err) {
-                // Show the error state
                 errorMessage.textContent = err.message;
                 loadingDiv.classList.add('hidden');
                 errorDiv.classList.remove('hidden');
